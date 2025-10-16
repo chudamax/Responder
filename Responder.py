@@ -51,8 +51,8 @@ parser.add_option('-N', '--AnswerName',	   action="store",      help="Specifies 
 parser.add_option('-E', '--ErrorCode',     action="store_true",      help="Changes the error code returned by the SMB server to STATUS_LOGON_FAILURE. By default, the status is STATUS_ACCESS_DENIED. Changing this value permits to obtain WebDAV authentications from the poisoned machines where the WebClient service is running.", dest="ErrorCode", default=False)
 options, args = parser.parse_args()
 
-if not os.geteuid() == 0:
-    print(color("[!] Responder must be run as root."))
+if not HasAdminPrivileges():
+    print(color("[!] Responder must be run with administrative privileges."))
     sys.exit(-1)
 elif options.OURIP == None and IsOsX() == True:
     print("\n\033[1m\033[31mOSX detected, -i mandatory option is missing\033[0m\n")

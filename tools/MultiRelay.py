@@ -62,6 +62,19 @@ SysSVCFileName      = "./MultiRelay/bin/Syssvc.exe"
 def color(txt, code = 1, modifier = 0):
     return "\033[%d;3%dm%s\033[0m" % (modifier, code, txt)
 
+
+def has_admin_privileges():
+    if hasattr(os, 'geteuid'):
+        return os.geteuid() == 0
+    if os.name == 'nt':
+        try:
+            import ctypes
+            return bool(ctypes.windll.shell32.IsUserAnAdmin())
+        except Exception:
+            return False
+    return True
+
+
 if os.path.isfile(SysSVCFileName) is False:
    print(color("[!]MultiRelay/bin/ folder is empty. You need to run these commands:\n",1,1))
    print(color("apt-get install gcc-mingw-w64-x86-64",2,1))
@@ -101,8 +114,8 @@ if options.UserToRelay is None:
 if options.ExtraPort is None:
     options.ExtraPort = 0
 
-if not os.geteuid() == 0:
-    print(color("[!] MultiRelay must be run as root."))
+if not has_admin_privileges():
+    print(color("[!] MultiRelay must be run with administrative privileges."))
     sys.exit(-1)
 
 OneCommand       = options.OneCommand
