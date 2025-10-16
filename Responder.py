@@ -77,61 +77,64 @@ Have_IPv6 = settings.Config.IPv6
 
 class ThreadingUDPServer(ThreadingMixIn, UDPServer):
 	def server_bind(self):
-		if OsInterfaceIsSupported():
-			try:
-				if settings.Config.Bind_To_ALL:
-					pass
-				else:
-					if (sys.version_info > (3, 0)):
-						self.socket.setsockopt(socket.SOL_SOCKET, 25, bytes(settings.Config.Interface+'\0', 'utf-8'))
-						if Have_IPv6:
-							self.socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, False)
-					else:
-						self.socket.setsockopt(socket.SOL_SOCKET, 25, settings.Config.Interface+'\0')
-						if Have_IPv6:
-							self.socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, False)
-			except:
-				pass
-		UDPServer.server_bind(self)
+                if OsInterfaceIsSupported():
+                        try:
+                                if settings.Config.Bind_To_ALL:
+                                        pass
+                                else:
+                                        if (sys.version_info > (3, 0)):
+                                                self.socket.setsockopt(socket.SOL_SOCKET, 25, bytes(settings.Config.Interface+'\0', 'utf-8'))
+                                        else:
+                                                self.socket.setsockopt(socket.SOL_SOCKET, 25, settings.Config.Interface+'\0')
+                        except:
+                                pass
+                if Have_IPv6:
+                        try:
+                                self.socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, False)
+                        except (AttributeError, OSError):
+                                pass
+                UDPServer.server_bind(self)
 
 class ThreadingTCPServer(ThreadingMixIn, TCPServer):
-	def server_bind(self):
-		if OsInterfaceIsSupported():
+        def server_bind(self):
+                if OsInterfaceIsSupported():
 			try:
 				if settings.Config.Bind_To_ALL:
 					pass
-				else:
-					if (sys.version_info > (3, 0)):
-						self.socket.setsockopt(socket.SOL_SOCKET, 25, bytes(settings.Config.Interface+'\0', 'utf-8'))
-						if Have_IPv6:
-							self.socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, False)
-					else:
-						self.socket.setsockopt(socket.SOL_SOCKET, 25, settings.Config.Interface+'\0')
-						if Have_IPv6:
-							self.socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, False)
-			except:
-				pass
-		TCPServer.server_bind(self)
+                                else:
+                                        if (sys.version_info > (3, 0)):
+                                                self.socket.setsockopt(socket.SOL_SOCKET, 25, bytes(settings.Config.Interface+'\0', 'utf-8'))
+                                        else:
+                                                self.socket.setsockopt(socket.SOL_SOCKET, 25, settings.Config.Interface+'\0')
+                        except:
+                                pass
+                if Have_IPv6:
+                        try:
+                                self.socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, False)
+                        except (AttributeError, OSError):
+                                pass
+                TCPServer.server_bind(self)
 
 class ThreadingTCPServerAuth(ThreadingMixIn, TCPServer):
-	def server_bind(self):
-		if OsInterfaceIsSupported():
+        def server_bind(self):
+                if OsInterfaceIsSupported():
 			try:
 				if settings.Config.Bind_To_ALL:
 					pass
-				else:
-					if (sys.version_info > (3, 0)):
-						self.socket.setsockopt(socket.SOL_SOCKET, 25, bytes(settings.Config.Interface+'\0', 'utf-8'))
-						if Have_IPv6:
-							self.socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, False)
-					else:
-						self.socket.setsockopt(socket.SOL_SOCKET, 25, settings.Config.Interface+'\0')
-						if Have_IPv6:
-							self.socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, False)
-			except:
-				pass
-		self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack('ii', 1, 0))
-		TCPServer.server_bind(self)
+                                else:
+                                        if (sys.version_info > (3, 0)):
+                                                self.socket.setsockopt(socket.SOL_SOCKET, 25, bytes(settings.Config.Interface+'\0', 'utf-8'))
+                                        else:
+                                                self.socket.setsockopt(socket.SOL_SOCKET, 25, settings.Config.Interface+'\0')
+                        except:
+                                pass
+                if Have_IPv6:
+                        try:
+                                self.socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, False)
+                        except (AttributeError, OSError):
+                                pass
+                self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack('ii', 1, 0))
+                TCPServer.server_bind(self)
 
 class ThreadingUDPMDNSServer(ThreadingMixIn, UDPServer):
 	def server_bind(self):
@@ -150,22 +153,23 @@ class ThreadingUDPMDNSServer(ThreadingMixIn, UDPServer):
 			if Have_IPv6:
 				mreq = socket.inet_pton(socket.AF_INET6, MADDR6) + struct.pack('@I', if_nametoindex2(settings.Config.Interface))
 				self.socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_JOIN_GROUP, mreq)
-		if OsInterfaceIsSupported():
-			try:
-				if settings.Config.Bind_To_ALL:
-					pass
-				else:
-					if (sys.version_info > (3, 0)):
-						self.socket.setsockopt(socket.SOL_SOCKET, 25, bytes(settings.Config.Interface+'\0', 'utf-8'))
-						if Have_IPv6:
-							self.socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, False)
-					else:
-						self.socket.setsockopt(socket.SOL_SOCKET, 25, settings.Config.Interface+'\0')
-						if Have_IPv6:
-							self.socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, False)
-			except:
-				pass
-		UDPServer.server_bind(self)
+                if OsInterfaceIsSupported():
+                        try:
+                                if settings.Config.Bind_To_ALL:
+                                        pass
+                                else:
+                                        if (sys.version_info > (3, 0)):
+                                                self.socket.setsockopt(socket.SOL_SOCKET, 25, bytes(settings.Config.Interface+'\0', 'utf-8'))
+                                        else:
+                                                self.socket.setsockopt(socket.SOL_SOCKET, 25, settings.Config.Interface+'\0')
+                        except:
+                                pass
+                if Have_IPv6:
+                        try:
+                                self.socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, False)
+                        except (AttributeError, OSError):
+                                pass
+                UDPServer.server_bind(self)
 
 class ThreadingUDPLLMNRServer(ThreadingMixIn, UDPServer):
 	def server_bind(self):
@@ -179,22 +183,23 @@ class ThreadingUDPLLMNRServer(ThreadingMixIn, UDPServer):
 		if Have_IPv6:
 			mreq = socket.inet_pton(socket.AF_INET6, MADDR6) + struct.pack('@I', if_nametoindex2(settings.Config.Interface))
 			self.socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_JOIN_GROUP, mreq)
-		if OsInterfaceIsSupported():
-			try:
-				if settings.Config.Bind_To_ALL:
-					pass
-				else:
-					if (sys.version_info > (3, 0)):
-						self.socket.setsockopt(socket.SOL_SOCKET, 25, bytes(settings.Config.Interface+'\0', 'utf-8'))
-						if Have_IPv6:
-							self.socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, False)
-					else:
-						self.socket.setsockopt(socket.SOL_SOCKET, 25, settings.Config.Interface+'\0')
-						if Have_IPv6:
-							self.socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, False)
-			except:
-				pass
-		UDPServer.server_bind(self)
+                if OsInterfaceIsSupported():
+                        try:
+                                if settings.Config.Bind_To_ALL:
+                                        pass
+                                else:
+                                        if (sys.version_info > (3, 0)):
+                                                self.socket.setsockopt(socket.SOL_SOCKET, 25, bytes(settings.Config.Interface+'\0', 'utf-8'))
+                                        else:
+                                                self.socket.setsockopt(socket.SOL_SOCKET, 25, settings.Config.Interface+'\0')
+                        except:
+                                pass
+                if Have_IPv6:
+                        try:
+                                self.socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, False)
+                        except (AttributeError, OSError):
+                                pass
+                UDPServer.server_bind(self)
 		
 
 ThreadingUDPServer.allow_reuse_address = 1
