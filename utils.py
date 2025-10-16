@@ -26,9 +26,9 @@ import codecs
 import struct
 import random
 try:
-	import netifaces
+        import netifaces
 except:
-	sys.exit('You need to install python3-netifaces or run Responder with python3...\nTry "apt-get install python3-netifaces" or "pip install netifaces"')
+        sys.exit('You need to install python3-netifaces or run Responder with python3...\nTry "apt-get install python3-netifaces" or "pip install netifaces"')
 
 try:
 	import aioquic
@@ -87,22 +87,40 @@ except:
 	print("[!] Please install python-sqlite3 extension.")
 	sys.exit(0)
 
-def color(txt, code = 1, modifier = 0):
-	if txt.startswith('[*]'):
-		settings.Config.PoisonersLogger.warning(txt)
-	elif 'Analyze' in txt:
-		settings.Config.AnalyzeLogger.warning(txt)
+def IsWindows():
+        return os.name == 'nt' or sys.platform.startswith('win')
 
-	if os.name == 'nt':  # No colors for windows...
-		return txt
-	return "\033[%d;3%dm%s\033[0m" % (modifier, code, txt)
+
+def HasAdminPrivileges():
+        if hasattr(os, 'geteuid'):
+                return os.geteuid() == 0
+        if IsWindows():
+                try:
+                        import ctypes
+                        return bool(ctypes.windll.shell32.IsUserAnAdmin())
+                except Exception:
+                        return False
+        return True
+
+
+def color(txt, code = 1, modifier = 0):
+        config = getattr(settings, 'Config', None)
+        if config and hasattr(config, 'PoisonersLogger'):
+                if txt.startswith('[*]'):
+                        config.PoisonersLogger.warning(txt)
+                elif 'Analyze' in txt and hasattr(config, 'AnalyzeLogger'):
+                        config.AnalyzeLogger.warning(txt)
+
+        if IsWindows():  # No colors for windows...
+                return txt
+        return "\033[%d;3%dm%s\033[0m" % (modifier, code, txt)
 
 def text(txt):
-	stripcolors = re.sub(r'\x1b\[([0-9,A-Z]{1,2}(;[0-9]{1,2})?(;[0-9]{3})?)?[m|K]?', '', txt)
-	logging.info(stripcolors)
-	if os.name == 'nt':
-		return txt
-	return '\r' + re.sub(r'\[([^]]*)\]', "\033[1;34m[\\1]\033[0m", txt)
+        stripcolors = re.sub(r'\x1b\[([0-9,A-Z]{1,2}(;[0-9]{1,2})?(;[0-9]{3})?)?[m|K]?', '', txt)
+        logging.info(stripcolors)
+        if IsWindows():
+                return txt
+        return '\r' + re.sub(r'\[([^]]*)\]', "\033[1;34m[\\1]\033[0m", txt)
 
 def IsOnTheSameSubnet(ip, net):
 	net += '/24'
@@ -178,9 +196,9 @@ def RespondWithIP6():
 
 
 def OsInterfaceIsSupported():
-	if settings.Config.Interface != "Not set":
-		return not IsOsX()
-	return False
+        if settings.Config.Interface != "Not set":
+                return not (IsOsX() or IsWindows())
+        return False
 
 def IsOsX():
 	return sys.platform == "darwin"
@@ -195,37 +213,40 @@ def IsIPv6IP(IP):
 	else:
 		return False	
 	
+def _InterfaceIPv4Address(Iface):
+        addresses = netifaces.ifaddresses(Iface)
+        inet_info = addresses.get(netifaces.AF_INET, [])
+        for entry in inet_info:
+                ip = entry.get('addr')
+                if ip and not ip.startswith('127.'):
+                        return ip
+        raise ValueError('IPv4 address not found for interface %s' % Iface)
+
+
 def FindLocalIP(Iface, OURIP):
-	if Iface == 'ALL':
-		return '0.0.0.0'
+        if Iface == 'ALL':
+                return '0.0.0.0'
 
-	try:
-		if IsOsX():
-			return OURIP
-			
-		elif IsIPv6IP(OURIP):	
-			s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-			s.setsockopt(socket.SOL_SOCKET, 25, str(Iface+'\0').encode('utf-8'))
-			s.connect(("127.0.0.1",9))#RFC 863
-			ret = s.getsockname()[0]
-			s.close()
-			return ret
+        try:
+                if IsOsX():
+                        return OURIP
 
-			
-		elif IsIPv6IP(OURIP) == False and OURIP != None:
-			return OURIP
-		
-		elif OURIP == None:
-			s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-			s.setsockopt(socket.SOL_SOCKET, 25, str(Iface+'\0').encode('utf-8'))
-			s.connect(("127.0.0.1",9))#RFC 863
-			ret = s.getsockname()[0]
-			s.close()
-			return ret
-			
-	except socket.error:
-		print(color("[!] Error: %s: Interface not found" % Iface, 1))
-		sys.exit(-1)
+                if OURIP and not IsIPv6IP(OURIP):
+                        return OURIP
+
+                if IsWindows():
+                        return _InterfaceIPv4Address(Iface)
+
+                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                s.setsockopt(socket.SOL_SOCKET, 25, str(Iface+'\0').encode('utf-8'))
+                s.connect(("127.0.0.1",9))#RFC 863
+                ret = s.getsockname()[0]
+                s.close()
+                return ret
+
+        except (socket.error, ValueError, KeyError):
+                print(color("[!] Error: %s: Interface not found" % Iface, 1))
+                sys.exit(-1)
 
 def Probe_IPv6_socket():
 	"""Return true is IPv6 sockets are really supported, and False when IPv6 is not supported."""

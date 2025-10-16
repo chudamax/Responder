@@ -349,33 +349,50 @@ class Settings:
 			pass
 		else:
 			#If it's the first time, generate SSL certs for this Responder session and send openssl output to /dev/null
-			Certs = os.system(self.ResponderPATH+"/certs/gen-self-signed-cert.sh >/dev/null 2>&1")
-		
-		try:
-			NetworkCard = subprocess.check_output(["ifconfig", "-a"])
-		except:
-			try:
-				NetworkCard = subprocess.check_output(["ip", "address", "show"])
-			except subprocess.CalledProcessError as ex:
-				NetworkCard = "Error fetching Network Interfaces:", ex
-				pass
-		try:
-			p = subprocess.Popen('resolvectl', stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-			DNS = p.stdout.read()
-		except:
-			p = subprocess.Popen(['cat', '/etc/resolv.conf'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-			DNS = p.stdout.read()
+			if utils.IsWindows():
+				print(utils.color('[!] Automatic certificate generation is not supported on Windows. Ensure certs/ contains valid certificates.', 3, 1))
+			else:
+				Certs = os.system(self.ResponderPATH+"/certs/gen-self-signed-cert.sh >/dev/null 2>&1")
 
-		try:
-			RoutingInfo = subprocess.check_output(["netstat", "-rn"])
-		except:
-			try:
-				RoutingInfo = subprocess.check_output(["ip", "route", "show"])
-			except subprocess.CalledProcessError as ex:
-				RoutingInfo = "Error fetching Routing information:", ex
-				pass
+		def _decode_output(data):
+			if isinstance(data, bytes):
+				return data.decode('latin-1', errors='ignore')
+			return str(data)
 
-		Message = "%s\nCurrent environment is:\nNetwork Config:\n%s\nDNS Settings:\n%s\nRouting info:\n%s\n\n"%(utils.HTTPCurrentDate(), NetworkCard.decode('latin-1'),DNS.decode('latin-1'),RoutingInfo.decode('latin-1'))
+		def _run_command(command):
+			try:
+				return subprocess.check_output(command, stderr=subprocess.STDOUT)
+			except (subprocess.CalledProcessError, OSError):
+				return b''
+
+		if utils.IsWindows():
+			NetworkCard = _run_command(["ipconfig", "/all"])
+			if not NetworkCard:
+				NetworkCard = b"Error fetching Network Interfaces."
+			DNS = NetworkCard
+		else:
+			NetworkCard = _run_command(["ifconfig", "-a"])
+			if not NetworkCard:
+				NetworkCard = _run_command(["ip", "address", "show"])
+			if not NetworkCard:
+				NetworkCard = b"Error fetching Network Interfaces."
+
+			DNS = _run_command(["resolvectl"])
+			if not DNS:
+				DNS = _run_command(["cat", "/etc/resolv.conf"])
+			if not DNS:
+				DNS = b"Error fetching DNS settings."
+
+		RoutingInfo = _run_command(["netstat", "-rn"])
+		if not RoutingInfo:
+			if utils.IsWindows():
+				RoutingInfo = _run_command(["route", "print"])
+			else:
+				RoutingInfo = _run_command(["ip", "route", "show"])
+		if not RoutingInfo:
+			RoutingInfo = b"Error fetching Routing information."
+
+		Message = "%s\nCurrent environment is:\nNetwork Config:\n%s\nDNS Settings:\n%s\nRouting info:\n%s\n\n"%(utils.HTTPCurrentDate(), _decode_output(NetworkCard),_decode_output(DNS),_decode_output(RoutingInfo))
 		try:
 			utils.DumpConfig(self.ResponderConfigDump, Message)
 			#utils.DumpConfig(self.ResponderConfigDump,str(self))
